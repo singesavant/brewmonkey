@@ -89,6 +89,10 @@ class BrewpiSocketMessage:
 
     def reset_controller(self):
         r = self.session.post(self._uri, data={'messageType': 'resetController'})
+
+        for i in range(0, 10):
+            self.set_device_state(WriteDeviceCommand(slot=i, state=DeviceState.STATE_OFF))
+
         r.raise_for_status()
 
         return r.text
