@@ -28,13 +28,15 @@ from werkzeug.exceptions import BadRequest
 (CONFIG_OFF,
  CONFIG_PREHEAT,
  CONFIG_MASH,
- CONFIG_BOIL) = range(0, 4)
+ CONFIG_BOIL,
+ CONFIG_RESERVOIR) = range(0, 5)
 
 config_name_mapping = {
     CONFIG_OFF: 'off',
     CONFIG_PREHEAT: 'preheat',
     CONFIG_MASH: 'mash',
-    CONFIG_BOIL: 'boil'
+    CONFIG_BOIL: 'boil',
+    CONFIG_RESERVOIR: 'reservoir'
 }
 
 
@@ -246,6 +248,36 @@ class ConfigurationSwitcher:
                                            configuration_code=CONFIG_PREHEAT)
 
 
+    def switch_to_reservoir(self):
+        """
+        Switch to reservoir configuration
+        """
+        next_free_slot_number = 0
+        device_cmds = []
+        delayed_cmds = []
+
+        # Create commands : sensors, actuators
+        (new_cmds, next_free_slot_number) = self._make_sensor_commands(starting_slot=next_free_slot_number,
+                                                                       chamber_sensor_address=app.config['SENSOR_RES'],
+                                                                       log1_sensor_address=app.config['SENSOR_MASHTUN'],
+                                                                       log2_sensor_address=app.config['SENSOR_BK'],
+                                                                       log3_sensor_address=app.config['SENSOR_CFC'])
+        device_cmds += new_cmds
+
+        (new_cmds, delayed_cmds, next_free_slot_number) = self._make_actuator_commands(starting_slot=next_free_slot_number,
+                                                                                       heater_pin=app.config['ACTUATOR_RES'],
+                                                                                       manual_actuators=[app.config['ACTUATOR_BK']])
+
+        device_cmds += new_cmds
+
+        # Execute them
+        self._execute_configuration_switch(device_commands=device_cmds,
+                                           control_cmds=[],
+                                           delayed_cmds=delayed_cmds,
+                                           configuration_code=CONFIG_RESERVOIR)
+
+
+
     def switch_to_mashing(self):
         """
         Switch to mash configuration
@@ -388,7 +420,8 @@ class BrewPiConfigurationSwitcher(MethodResource):
             'off': switcher.switch_to_off,
             'preheat': switcher.switch_to_preheating,
             'mash': switcher.switch_to_mashing,
-            'boil': switcher.switch_to_boil
+            'boil': switcher.switch_to_boil,
+            'reservoir': switcher.switch_to_reservoir
         }
 
         if name in configurations:
