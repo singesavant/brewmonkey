@@ -1,4 +1,5 @@
 import requests
+import time
 
 import json
 
@@ -90,6 +91,8 @@ class BrewpiSocketMessage:
     def reset_controller(self):
         for i in range(0, 10):
             self.set_device_state(WriteDeviceCommand(slot=i, state=DeviceState.STATE_OFF))
+
+        time.sleep(2)
 
         r = self.session.post(self._uri, data={'messageType': 'resetController'})
 
@@ -238,7 +241,7 @@ class ConfigurationSwitcher:
 
         (new_cmds, delayed_cmds, next_free_slot_number) = self._make_actuator_commands(starting_slot=next_free_slot_number,
                                                                                        heater_pin=app.config['ACTUATOR_HLT'],
-                                                                                       manual_actuators=[app.config['ACTUATOR_RES']])
+                                                                                       manual_actuators=[])
 
         device_cmds += new_cmds
 
@@ -270,7 +273,7 @@ class ConfigurationSwitcher:
 
         (new_cmds, delayed_cmds, next_free_slot_number) = self._make_actuator_commands(starting_slot=next_free_slot_number,
                                                                                        heater_pin=app.config['ACTUATOR_RES'],
-                                                                                       manual_actuators=[app.config['ACTUATOR_BK']])
+                                                                                       manual_actuators=[])
 
         device_cmds += new_cmds
 
