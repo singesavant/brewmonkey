@@ -96,6 +96,10 @@ class BrewpiSocketMessage:
 
         r = self.session.post(self._uri, data={'messageType': 'resetController'})
 
+        time.sleep(2)
+
+        r = self.session.post(self._uri, data={'messageType': 'setOff'})
+
         r.raise_for_status()
 
         return r.text
