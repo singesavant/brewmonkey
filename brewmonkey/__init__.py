@@ -2,6 +2,7 @@ import requests
 import time
 
 import json
+import struct
 
 from brewpiv2.commands import (
     InstallDeviceCommand,
@@ -47,6 +48,30 @@ app.config.from_envvar('BREWMONKEY_SETTINGS')
 CORS(app)
 
 docs = FlaskApiSpec(app)
+
+from coapthon.client.helperclient import HelperClient
+
+class ArduinoHLT:
+    def __init__(self, host, username=None, password=None):
+        self._host = host
+        self._uri = "http://{0}/status".format(host)
+
+        self.session = requests.Session()
+        if username:
+            self.session.auth = (username, password)
+
+    def get_status(self):
+        r = self.session.get(self._uri)
+
+        r.raise_for_status()
+
+        return r.json()
+
+    def put(self, path, payload):
+        response = self._client.put(path, payload)
+        client.stop()
+        return response
+
 
 class BrewpiSocketMessage:
     def __init__(self, host, username=None, password=None):
@@ -129,6 +154,7 @@ class BrewpiSocketMessage:
 
 # FIXME: global
 transport = BrewpiSocketMessage(app.config["BREWPI_URI"], username=app.config["BREWPI_USERNAME"], password=app.config["BREWPI_PASSWORD"])
+transport_hlt = ArduinoHLT(app.config["HLT_HOST"])
 
 class ConfigurationSwitcher:
     def _make_actuator_commands(self, starting_slot, heater_pin, manual_actuators=[]):
@@ -373,6 +399,25 @@ class ConfigurationSwitcher:
         transport.set_control_constants(configuration_settings_cmd)
 
 
+@doc(description='HLT')
+class HLT(MethodResource):
+    """
+    State and operations on the HLT
+    """
+    def get(self):
+        response = transport_hlt.get_status()
+        return response
+
+    @use_kwargs({'amount': fields.Float()})
+    def post(self, amount):
+        return transport_hlt.put('fill', amount)
+
+    @use_kwargs({'amount': fields.Float()})
+    def delete(self, amount):
+        return transport_hlt.put('transfer', amount)
+
+app.add_url_rule('/hlt', view_func=HLT.as_view('hlt'))
+docs.register(HLT)
 
 @doc(description='Temp')
 class BrewPiTemp(MethodResource):
