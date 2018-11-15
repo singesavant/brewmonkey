@@ -54,23 +54,26 @@ from coapthon.client.helperclient import HelperClient
 class ArduinoHLT:
     def __init__(self, host, username=None, password=None):
         self._host = host
-        self._uri = "http://{0}/status".format(host)
+        self._uri = "http://{0}".format(host)
 
         self.session = requests.Session()
         if username:
             self.session.auth = (username, password)
 
     def get_status(self):
-        r = self.session.get(self._uri)
+        r = self.session.get("{0}/status".format(self._uri))
 
         r.raise_for_status()
 
         return r.json()
 
-    def put(self, path, payload):
-        response = self._client.put(path, payload)
-        client.stop()
-        return response
+    def fill_to(self, target):
+        print(target)
+        r = self.session.get("{0}/fill?target={1}".format(self._uri, target))
+
+        r.raise_for_status()
+
+        return None
 
 
 class BrewpiSocketMessage:
@@ -408,13 +411,13 @@ class HLT(MethodResource):
         response = transport_hlt.get_status()
         return response
 
-    @use_kwargs({'amount': fields.Float()})
-    def post(self, amount):
-        return transport_hlt.put('fill', amount)
+    @use_kwargs({'target_liters': fields.Integer()})
+    def post(self, target_liters):
+        return transport_hlt.fill_to(target_liters)
 
     @use_kwargs({'amount': fields.Float()})
     def delete(self, amount):
-        return transport_hlt.put('transfer', amount)
+        return transport_hlt.post('transfer', amount)
 
 app.add_url_rule('/hlt', view_func=HLT.as_view('hlt'))
 docs.register(HLT)
