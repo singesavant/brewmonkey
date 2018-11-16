@@ -22,6 +22,7 @@ from flask_apispec import use_kwargs
 from flask_apispec.annotations import doc
 from flask_cors import CORS
 from flask import jsonify
+from flask.ext.cache import Cache
 
 from webargs import fields
 
@@ -45,11 +46,12 @@ config_name_mapping = {
 app = Flask("brewmonkey", instance_relative_config=True)
 app.config.from_envvar('BREWMONKEY_SETTINGS')
 
+cache = Cache(app, config={'CACHE_TYPE': 'simple'})
+
+
 CORS(app)
 
 docs = FlaskApiSpec(app)
-
-from coapthon.client.helperclient import HelperClient
 
 class ArduinoHLT:
     def __init__(self, host, username=None, password=None):
@@ -60,6 +62,7 @@ class ArduinoHLT:
         if username:
             self.session.auth = (username, password)
 
+    @cache.cached(timeout=1)
     def get_status(self):
         r = self.session.get("{0}/status".format(self._uri))
 
@@ -86,6 +89,7 @@ class BrewpiSocketMessage:
         if username:
             self.session.auth = (username, password)
 
+    @cache.cached(timeout=1)
     def get_temperatures(self):
         r = self.session.post(self._uri, data={'messageType': 'getTemperatures'})
 
@@ -103,6 +107,7 @@ class BrewpiSocketMessage:
         r.raise_for_status()
         return r.text
 
+    @cache.cached(timeout=1)
     def get_log(self):
         r = self.session.post(self._data_uri)
 

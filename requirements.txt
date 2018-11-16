@@ -2,4 +2,5 @@ flask
 coloredlogs
 flask-cors
 flask-apispec
+flask-cache
 requests
