@@ -22,7 +22,8 @@ from flask_apispec import use_kwargs
 from flask_apispec.annotations import doc
 from flask_cors import CORS
 from flask import jsonify
-from flask.ext.cache import Cache
+
+from flask_cache import Cache
 
 from webargs import fields
 
